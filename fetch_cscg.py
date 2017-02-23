@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-""""""
+"""Extract Conserved Single Copy Genes from genomes or genes catalogs """
+
 
 from __future__ import print_function
 import argparse
@@ -44,7 +45,7 @@ def is_file(path):
 def get_parameters():
     """Parse command line parameters.
     """
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('-i', '--fasta-file', dest='fasta_file', type=is_file, required=True,
             help='Multi-FASTA file with protein sequences from which CSCG should be extracted')
