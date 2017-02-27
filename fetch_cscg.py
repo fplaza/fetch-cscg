@@ -50,11 +50,17 @@ def get_parameters():
     parser.add_argument('-i', '--fasta-file', dest='fasta_file', type=is_file, required=True,
             help='Multi-FASTA file with protein sequences from which CSCG should be extracted')
 
-    parser.add_argument('-d', '--cscg-db', dest='cscg_db', type=is_dir, default=os.path.join(os.getcwd(), 'cscg_db'),
+    parser.add_argument('-d', '--cscg-db', dest='cscg_db', type=is_dir,
+            default=os.path.join(os.getcwd(), 'cscg_db'),
             help='Path to directory that contains hmm models.')
 
-    parser.add_argument('-m', '--hmm-model', dest='hmm_model', choices=['bacteria', 'archaea'], default='bacteria',
+    parser.add_argument('-m', '--hmm-model', dest='hmm_model',
+            choices=['bacteria', 'archaea'], default='bacteria',
             help='HMM model which will be used to searh for CSCG')
+
+    parser.add_argument('-t', '--num-threads', dest='num_threads', type=int,
+            choices=range(1,multiprocessing.cpu_count()), default=multiprocessing.cpu_count(),
+            help='Numbers of cpu threads')
 
     parser.add_argument('-o', '--output-file', dest='output_file', required=True,
             help='Output file listing CSCG found in input multi-FASTA file.')
@@ -68,13 +74,13 @@ def check_hmm_model(cscg_db, hmm_model):
         if not os.path.exists(f):
             raise Exception('Error: {} not found'.format(f))
 
-def run_hmmer(cscg_db, hmm_model, fasta_file):
+def run_hmmer(cscg_db, hmm_model, num_threads, fasta_file):
     hmmsearch_results_file=tempfile.NamedTemporaryFile(delete=False).name
 
     with open(os.devnull, 'w') as devnull:
         subprocess.check_call(['hmmsearch',\
                 '--tblout', hmmsearch_results_file,\
-                '--cpu', str(multiprocessing.cpu_count()),\
+                '--cpu', str(num_threads),\
                 os.path.join(cscg_db, hmm_model), fasta_file],
                 stdout=devnull)
 
@@ -93,6 +99,7 @@ def load_pfam_cutoffs(cscg_db, hmm_model):
 
 def filter_hmmsearch_results(pfam_cutoffs, hmmsearch_results_file):
     hmmsearch_filtered_results=list()
+    num_results_filtered_out=0
 
     with open(hmmsearch_results_file, 'r') as istream:
 
@@ -107,8 +114,10 @@ def filter_hmmsearch_results(pfam_cutoffs, hmmsearch_results_file):
 
             if score >= pfam_cutoffs[pfam_name]:
                 hmmsearch_filtered_results.append((gene_name, pfam_name, score))
+            else:
+                num_results_filtered_out=num_results_filtered_out+1
 
-    return hmmsearch_filtered_results
+    return hmmsearch_filtered_results, num_results_filtered_out
 
 def write_hmmsearch_results(hmmsearch_results, output_file):
     with open(output_file, 'w') as ostream:
@@ -127,12 +136,14 @@ def main():
     print('Done. Model contains {} protein families.\n'.format(len(pfam_cutoffs)))
 
     print('Running hmmsearch...')
-    hmmsearch_results_file=run_hmmer(parameters.cscg_db, parameters.hmm_model, parameters.fasta_file)
+    hmmsearch_results_file=run_hmmer(
+            parameters.cscg_db, parameters.hmm_model, parameters.num_threads, parameters.fasta_file)
     print('Done.\n')
 
     print('Filtering results...')
-    hmmsearch_filtered_results=filter_hmmsearch_results(pfam_cutoffs, hmmsearch_results_file)
-    print('Done. {} cscg found\n'.format(len(hmmsearch_filtered_results)))
+    hmmsearch_filtered_results,num_results_filtered_out=filter_hmmsearch_results(pfam_cutoffs, hmmsearch_results_file)
+    print('Done. {} cscg found. {} results filtered out\n'.format(\
+            len(hmmsearch_filtered_results), num_results_filtered_out))
 
     print('Writing results...')
     write_hmmsearch_results(hmmsearch_filtered_results, parameters.output_file)
