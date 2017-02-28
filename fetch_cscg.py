@@ -56,7 +56,7 @@ def get_parameters():
 
     parser.add_argument('-m', '--hmm-model', dest='hmm_model',
             choices=['bacteria', 'archaea'], default='bacteria',
-            help='HMM model which will be used to searh for CSCG')
+            help='HMM model which will be used to search for CSCG')
 
     parser.add_argument('-t', '--num-threads', dest='num_threads', type=int,
             choices=range(1,multiprocessing.cpu_count()), default=multiprocessing.cpu_count(),
