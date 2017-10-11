@@ -7,6 +7,7 @@
 from __future__ import print_function
 import argparse
 import os
+import sys
 import subprocess
 import multiprocessing
 import tempfile
@@ -51,7 +52,7 @@ def get_parameters():
             help='Multi-FASTA file with protein sequences from which CSCG should be extracted')
 
     parser.add_argument('-d', '--cscg-db', dest='cscg_db', type=is_dir,
-            default=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cscg_db'),
+            default=os.path.join(sys.path[0], 'cscg_db'),
             help='Path to directory that contains hmm models.')
 
     parser.add_argument('-m', '--hmm-model', dest='hmm_model',
@@ -72,7 +73,7 @@ def check_hmm_model(cscg_db, hmm_model):
 
     for f in (os.path.join(cscg_db, hmm_model + extension) for extension in extensions):
         if not os.path.exists(f):
-            raise Exception('Error: {} not found'.format(f))
+            raise Exception('Error: {0} not found'.format(f))
 
 def run_hmmer(cscg_db, hmm_model, num_threads, fasta_file):
     hmmsearch_results_file=tempfile.NamedTemporaryFile(delete=False).name
@@ -130,10 +131,10 @@ def main():
     parameters = get_parameters()
     parameters.hmm_model = 'cscg_' + parameters.hmm_model
 
-    print('Loading {} hmm model...'.format(parameters.hmm_model))
+    print('Loading {0} hmm model...'.format(parameters.hmm_model))
     check_hmm_model(parameters.cscg_db, parameters.hmm_model)
     pfam_cutoffs=load_pfam_cutoffs(parameters.cscg_db, parameters.hmm_model)
-    print('Done. Model contains {} protein families.\n'.format(len(pfam_cutoffs)))
+    print('Done. Model contains {0} protein families.\n'.format(len(pfam_cutoffs)))
 
     print('Running hmmsearch...')
     hmmsearch_results_file=run_hmmer(
@@ -142,7 +143,7 @@ def main():
 
     print('Filtering results...')
     hmmsearch_filtered_results,num_results_filtered_out=filter_hmmsearch_results(pfam_cutoffs, hmmsearch_results_file)
-    print('Done. {} cscg found. {} results filtered out\n'.format(\
+    print('Done. {0} cscg found. {1} results filtered out\n'.format(\
             len(hmmsearch_filtered_results), num_results_filtered_out))
 
     print('Writing results...')
