@@ -51,7 +51,7 @@ def get_parameters():
             help='Multi-FASTA file with protein sequences from which CSCG should be extracted')
 
     parser.add_argument('-d', '--cscg-db', dest='cscg_db', type=is_dir,
-            default=os.path.join(os.getcwd(), 'cscg_db'),
+            default=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cscg_db'),
             help='Path to directory that contains hmm models.')
 
     parser.add_argument('-m', '--hmm-model', dest='hmm_model',
